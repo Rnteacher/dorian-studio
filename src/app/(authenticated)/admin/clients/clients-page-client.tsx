@@ -34,10 +34,10 @@ export function ClientsPageClient({ clients }: ClientsPageClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">לקוחות</h1>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="size-4 me-1" />
+        <Button size="lg" onClick={() => setFormOpen(true)} className="shrink-0">
+          <Plus className="size-5 me-1" />
           לקוח חדש
         </Button>
       </div>
@@ -62,7 +62,13 @@ export function ClientsPageClient({ clients }: ClientsPageClientProps) {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-muted-foreground">לא נמצאו לקוחות.</p>
+        <div className="text-center py-12 space-y-4">
+          <p className="text-muted-foreground text-lg">לא נמצאו לקוחות.</p>
+          <Button variant="outline" size="lg" onClick={() => setFormOpen(true)}>
+            <Plus className="size-5 me-1" />
+            הוסף לקוח ראשון
+          </Button>
+        </div>
       ) : (
         <Table>
           <TableHeader>

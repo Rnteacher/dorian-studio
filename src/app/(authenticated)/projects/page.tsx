@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { he } from 'date-fns/locale'
-import { Calendar, Users } from 'lucide-react'
+import { Calendar, Plus, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import type { Project } from '@/types/database'
+import type { Profile, Project } from '@/types/database'
 
 interface ProjectWithClient extends Project {
   clients: { name: string } | null
@@ -15,6 +16,14 @@ interface ProjectWithClient extends Project {
 export default async function ProjectsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Check if user is admin
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user!.id)
+    .single()
+  const isAdmin = (profileData as Profile | null)?.role === 'admin'
 
   // Get user's project IDs first
   const { data: memberships } = await supabase
@@ -55,10 +64,30 @@ export default async function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">הפרויקטים שלי</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">הפרויקטים שלי</h1>
+        {isAdmin && (
+          <Button size="lg" asChild className="shrink-0">
+            <Link href="/admin/projects/new">
+              <Plus className="size-5 me-1" />
+              פרויקט חדש
+            </Link>
+          </Button>
+        )}
+      </div>
 
       {projects.length === 0 ? (
-        <p className="text-muted-foreground">אין פרויקטים עדיין.</p>
+        <div className="text-center py-12 space-y-4">
+          <p className="text-muted-foreground text-lg">אין פרויקטים עדיין.</p>
+          {isAdmin && (
+            <Button variant="outline" size="lg" asChild>
+              <Link href="/admin/projects/new">
+                <Plus className="size-5 me-1" />
+                צור פרויקט ראשון
+              </Link>
+            </Button>
+          )}
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => {
