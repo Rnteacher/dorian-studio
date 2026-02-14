@@ -27,13 +27,13 @@ export default async function AuthenticatedLayout({
 
   return (
     <UserProvider profile={profile as Profile}>
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={false}>
         <AppSidebar />
         <SidebarInset>
           <header className="flex h-14 items-center gap-2 border-b px-4">
             <SidebarTrigger />
           </header>
-          <main className="flex-1 p-4">
+          <main className="flex-1 overflow-x-hidden p-4">
             {children}
           </main>
         </SidebarInset>
