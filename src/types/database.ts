@@ -1,0 +1,272 @@
+export type UserRole = 'admin' | 'staff'
+export type ProjectRole = 'lead' | 'member' | 'viewer'
+export type TaskStatus = 'todo' | 'doing' | 'done' | 'frozen'
+
+export interface Profile {
+  id: string
+  email: string
+  full_name: string
+  avatar_url: string | null
+  role: UserRole | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Client {
+  id: string
+  name: string
+  notes: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ClientContact {
+  id: string
+  client_id: string
+  name: string
+  email: string
+  phone: string
+  role_title: string
+  is_primary: boolean
+  notes: string
+  created_at: string
+}
+
+export interface Project {
+  id: string
+  client_id: string
+  name: string
+  description: string
+  status: string
+  google_drive_url: string
+  start_date: string | null
+  due_date: string | null
+  is_archived: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ProjectMember {
+  id: string
+  project_id: string
+  user_id: string
+  role: ProjectRole
+  created_at: string
+}
+
+export interface Task {
+  id: string
+  project_id: string
+  title: string
+  description: string
+  status: TaskStatus
+  order_index: number
+  assignee_id: string | null
+  due_date: string | null
+  is_archived: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TaskNow {
+  id: string
+  user_id: string
+  task_id: string
+  order_index: number
+  added_at: string
+}
+
+export interface ProjectEvent {
+  id: string
+  project_id: string
+  title: string
+  description: string
+  event_date: string
+  event_time: string | null
+  location: string
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ActivityLog {
+  id: string
+  user_id: string | null
+  project_id: string | null
+  entity_type: string
+  entity_id: string
+  action: string
+  details: Record<string, unknown>
+  created_at: string
+}
+
+// Supabase Database type
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile
+        Insert: Partial<Profile> & { id: string; email: string }
+        Update: Partial<Profile>
+        Relationships: []
+      }
+      clients: {
+        Row: Client
+        Insert: Partial<Client> & { name: string }
+        Update: Partial<Client>
+        Relationships: []
+      }
+      client_contacts: {
+        Row: ClientContact
+        Insert: Partial<ClientContact> & { client_id: string; name: string }
+        Update: Partial<ClientContact>
+        Relationships: [
+          {
+            foreignKeyName: 'client_contacts_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      projects: {
+        Row: Project
+        Insert: Partial<Project> & { client_id: string; name: string }
+        Update: Partial<Project>
+        Relationships: [
+          {
+            foreignKeyName: 'projects_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      project_members: {
+        Row: ProjectMember
+        Insert: Partial<ProjectMember> & { project_id: string; user_id: string }
+        Update: Partial<ProjectMember>
+        Relationships: [
+          {
+            foreignKeyName: 'project_members_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'project_members_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      tasks: {
+        Row: Task
+        Insert: Partial<Task> & { project_id: string; title: string }
+        Update: Partial<Task>
+        Relationships: [
+          {
+            foreignKeyName: 'tasks_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_assignee_id_fkey'
+            columns: ['assignee_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      task_now: {
+        Row: TaskNow
+        Insert: Partial<TaskNow> & { user_id: string; task_id: string }
+        Update: Partial<TaskNow>
+        Relationships: [
+          {
+            foreignKeyName: 'task_now_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'task_now_task_id_fkey'
+            columns: ['task_id']
+            isOneToOne: false
+            referencedRelation: 'tasks'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      project_events: {
+        Row: ProjectEvent
+        Insert: Partial<ProjectEvent> & { project_id: string; title: string; event_date: string }
+        Update: Partial<ProjectEvent>
+        Relationships: [
+          {
+            foreignKeyName: 'project_events_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'project_events_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      activity_log: {
+        Row: ActivityLog
+        Insert: Partial<ActivityLog> & { entity_type: string; entity_id: string; action: string }
+        Update: Partial<ActivityLog>
+        Relationships: [
+          {
+            foreignKeyName: 'activity_log_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activity_log_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+    }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: {
+      user_role: UserRole
+      project_role: ProjectRole
+      task_status: TaskStatus
+    }
+    CompositeTypes: Record<string, never>
+  }
+}

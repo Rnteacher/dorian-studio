@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(xcopy \"D:\\\\Projects\\\\dorian-studio\\\\*\" \"D:\\\\Projects\\\\Studio App\"\" /E /H /Y /Q)",
+      "Bash(robocopy:*)",
+      "Bash(powershell:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init -y)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npx next build:*)",
+      "Bash(ls -la \"D:\\\\Projects\\\\Studio App\\\\src\\\\components\\\\kanban\"\" 2>/dev/null || echo \"No kanban directory \")",
+      "Bash(ls:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git config:*)"
+    ]
+  }
+}
