@@ -27,7 +27,7 @@ export default async function AuthenticatedLayout({
 
   return (
     <UserProvider profile={profile as Profile}>
-      <SidebarProvider defaultOpen={false}>
+      <SidebarProvider defaultOpen={true}>
         <AppSidebar />
         <SidebarInset className="min-w-0">
           <header className="flex h-14 items-center gap-2 border-b px-4">

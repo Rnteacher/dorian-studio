@@ -30,8 +30,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar side="left" collapsible="icon">
-      <SidebarHeader className="border-b px-4 py-3">
-        <Link href="/projects" className="text-lg font-bold">
+      <SidebarHeader className="border-b px-4 py-3 overflow-hidden">
+        <Link href="/projects" className="text-lg font-bold whitespace-nowrap">
           Dorian Studio
         </Link>
       </SidebarHeader>
@@ -80,13 +80,13 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-3">
+      <SidebarFooter className="border-t p-3 overflow-hidden">
         <div className="flex items-center gap-3">
-          <Avatar className="size-8">
+          <Avatar className="size-8 shrink-0">
             <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name} />
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col text-sm leading-tight">
+          <div className="flex flex-col text-sm leading-tight min-w-0">
             <span className="font-medium truncate">{user.full_name}</span>
             <span className="text-xs text-muted-foreground truncate">{user.email}</span>
           </div>
