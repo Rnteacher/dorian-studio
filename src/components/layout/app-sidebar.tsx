@@ -29,7 +29,7 @@ export function AppSidebar() {
     .slice(0, 2)
 
   return (
-    <Sidebar side="right" collapsible="icon">
+    <Sidebar side="left" collapsible="icon">
       <SidebarHeader className="border-b px-4 py-3">
         <Link href="/projects" className="text-lg font-bold">
           Dorian Studio
