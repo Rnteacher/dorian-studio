@@ -149,3 +149,60 @@ export async function updateProjectAction(projectId: string, formData: FormData)
   revalidatePath(`/projects/${projectId}`)
   revalidatePath('/projects')
 }
+
+export async function updateProjectWithMembersAction(projectId: string, formData: FormData) {
+  const supabase = await createClient()
+
+  const name = formData.get('name') as string
+  if (!name?.trim()) throw new Error('שם פרויקט הוא שדה חובה')
+
+  const clientId = formData.get('client_id') as string
+  if (!clientId) throw new Error('יש לבחור לקוח')
+
+  // Update the project
+  const { error } = await supabase
+    .from('projects')
+    .update({
+      name: name.trim(),
+      client_id: clientId,
+      description: (formData.get('description') as string)?.trim() ?? '',
+      google_drive_url: (formData.get('google_drive_url') as string)?.trim() ?? '',
+      status: (formData.get('status') as string) ?? 'active',
+      start_date: (formData.get('start_date') as string) || null,
+      due_date: (formData.get('due_date') as string) || null,
+    })
+    .eq('id', projectId)
+
+  if (error) throw new Error(error.message)
+
+  // Sync members: delete all existing, then insert new list
+  const membersJson = formData.get('members') as string
+  if (membersJson) {
+    const members: { user_id: string; role: string }[] = JSON.parse(membersJson)
+
+    // Remove all current members
+    await supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId)
+
+    // Insert new members
+    if (members.length > 0) {
+      const { error: membersError } = await supabase
+        .from('project_members')
+        .insert(
+          members.map((m) => ({
+            project_id: projectId,
+            user_id: m.user_id,
+            role: m.role,
+          }))
+        )
+      if (membersError) throw new Error(membersError.message)
+    }
+  }
+
+  revalidatePath(`/projects/${projectId}`)
+  revalidatePath('/projects')
+  revalidatePath('/admin/clients')
+  revalidatePath('/home')
+}

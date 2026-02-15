@@ -164,7 +164,7 @@ export function ClientDetailClient({ client, contacts, projects, isSuperAdmin, i
                 key={project.id}
                 className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent transition-colors"
               >
-                <Link href={`/projects/${project.id}`} className="flex-1 min-w-0">
+                <Link href={`/admin/projects/${project.id}/edit`} className="flex-1 min-w-0">
                   <span className="font-medium">{project.name}</span>
                 </Link>
                 <div className="flex items-center gap-2 shrink-0">
