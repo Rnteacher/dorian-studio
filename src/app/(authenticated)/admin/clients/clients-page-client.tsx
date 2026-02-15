@@ -67,6 +67,8 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
     startTransition(async () => {
       try {
         await toggleClientActiveAction(client.id, !client.is_active)
+        // When deactivating — show inactive clients so user sees the change
+        if (client.is_active) setShowInactive(true)
         router.refresh()
         toast.success(client.is_active ? 'הלקוח הועבר ללא פעיל' : 'הלקוח הופעל מחדש')
       } catch (err) {
@@ -100,7 +102,12 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
           size="sm"
           onClick={() => setShowInactive(!showInactive)}
         >
-          {showInactive ? 'הכל' : 'פעילים'}
+          {showInactive ? 'הסתר לא פעילים' : 'הצג הכל'}
+          {!showInactive && clients.some((c) => !c.is_active) && (
+            <Badge variant="secondary" className="ms-1.5 px-1.5 py-0 text-[10px]">
+              {clients.filter((c) => !c.is_active).length}
+            </Badge>
+          )}
         </Button>
       </div>
 
@@ -125,7 +132,7 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
           </TableHeader>
           <TableBody>
             {filtered.map((client) => (
-              <TableRow key={client.id}>
+              <TableRow key={client.id} className={!client.is_active ? 'opacity-50' : ''}>
                 <TableCell>
                   <Link
                     href={`/admin/clients/${client.id}`}
