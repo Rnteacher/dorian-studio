@@ -16,7 +16,13 @@ export async function createProjectAction(formData: FormData) {
 
   // Try to auto-create Google Drive folder
   let googleDriveUrl = (formData.get('google_drive_url') as string)?.trim() ?? ''
+  console.log('[createProject] google_drive_url from form:', JSON.stringify(googleDriveUrl))
+  console.log('[createProject] GOOGLE_SERVICE_ACCOUNT_EMAIL set:', !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL)
+  console.log('[createProject] GOOGLE_SERVICE_ACCOUNT_KEY set:', !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+  console.log('[createProject] GOOGLE_DRIVE_PARENT_FOLDER_ID set:', !!process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID)
+
   if (!googleDriveUrl) {
+    console.log('[createProject] No drive URL from form, attempting auto-create...')
     // Fetch client name for folder naming
     const { data: clientData } = await supabase
       .from('clients')
@@ -24,11 +30,15 @@ export async function createProjectAction(formData: FormData) {
       .eq('id', clientId)
       .single()
 
+    console.log('[createProject] Client name for folder:', (clientData as { name: string } | null)?.name)
     const driveUrl = await createProjectFolder(
       name.trim(),
       (clientData as { name: string } | null)?.name ?? ''
     )
+    console.log('[createProject] Drive folder result:', driveUrl)
     if (driveUrl) googleDriveUrl = driveUrl
+  } else {
+    console.log('[createProject] Skipping Drive auto-create — URL already provided')
   }
 
   const { data: project, error } = await supabase

@@ -19,15 +19,19 @@ export async function createProjectFolder(
   projectName: string,
   clientName: string
 ): Promise<string | null> {
+  console.log('[GoogleDrive] createProjectFolder called:', { projectName, clientName })
+
   const drive = getDriveClient()
   if (!drive) {
-    console.log('Google Drive: Service Account not configured (missing env vars)')
+    console.log('[GoogleDrive] SKIPPED — Service Account not configured')
+    console.log('[GoogleDrive] EMAIL:', process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? 'SET' : 'MISSING')
+    console.log('[GoogleDrive] KEY:', process.env.GOOGLE_SERVICE_ACCOUNT_KEY ? `SET (${process.env.GOOGLE_SERVICE_ACCOUNT_KEY.length} chars)` : 'MISSING')
     return null
   }
 
   const parentFolderId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID
   if (!parentFolderId) {
-    console.log('Google Drive: GOOGLE_DRIVE_PARENT_FOLDER_ID not set')
+    console.log('[GoogleDrive] SKIPPED — GOOGLE_DRIVE_PARENT_FOLDER_ID not set')
     return null
   }
 
@@ -35,6 +39,8 @@ export async function createProjectFolder(
     const folderName = clientName
       ? `${clientName} — ${projectName}`
       : projectName
+
+    console.log('[GoogleDrive] Creating folder:', folderName, 'in parent:', parentFolderId)
 
     const res = await drive.files.create({
       requestBody: {
@@ -45,9 +51,10 @@ export async function createProjectFolder(
       fields: 'id, webViewLink',
     })
 
+    console.log('[GoogleDrive] SUCCESS — webViewLink:', res.data.webViewLink)
     return res.data.webViewLink ?? null
   } catch (err) {
-    console.error('Google Drive folder creation failed:', err)
+    console.error('[GoogleDrive] FAILED:', err instanceof Error ? err.message : err)
     return null
   }
 }
