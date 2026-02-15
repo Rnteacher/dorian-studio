@@ -22,6 +22,7 @@ export async function createTaskAction(
       status,
       order_index: orderIndex,
       created_by: user.id,
+      assignee_id: user.id,
     })
     .select()
     .single()
