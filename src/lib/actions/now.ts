@@ -29,12 +29,15 @@ export async function addToNowAction(
     .eq('id', taskId)
     .single()
 
+  // Auto-assign + move to "doing" status
+  const updates: Record<string, string> = { status: 'doing' }
   if (task && !task.assignee_id) {
-    await supabase
-      .from('tasks')
-      .update({ assignee_id: user.id })
-      .eq('id', taskId)
+    updates.assignee_id = user.id
   }
+  await supabase
+    .from('tasks')
+    .update(updates)
+    .eq('id', taskId)
 
   const { data, error } = await supabase
     .from('task_now')

@@ -217,26 +217,34 @@ export function ProjectWorkspace({
     }
 
     // --- Case 2: From kanban to Now list ---
-    // IMPORTANT: Do NOT change the task status when dragging to now-list
+    // Move task to "doing" status automatically
     if (activeContainer !== 'now-list' && overContainer === 'now-list') {
       const task = tasks.find((t) => t.id === activeId)
       if (!task) return
 
-      // Restore original status if dragOver accidentally changed it
-      if (preDragStatus && task.status !== preDragStatus) {
-        setTasks((prev) =>
-          prev.map((t) =>
-            t.id === task.id ? { ...t, status: preDragStatus } : t
-          )
-        )
-        task.status = preDragStatus
-      }
-
       // Check if already in now
       if (nowItems.some((i) => i.task_id === task.id)) {
+        // Restore original status if dragOver changed it
+        if (preDragStatus && task.status !== preDragStatus) {
+          setTasks((prev) =>
+            prev.map((t) =>
+              t.id === task.id ? { ...t, status: preDragStatus } : t
+            )
+          )
+        }
         toast.info('המשימה כבר ברשימת עכשיו')
         return
       }
+
+      // Optimistic: change status to "doing" + auto-assign
+      const updatedTask = {
+        ...task,
+        status: 'doing' as TaskStatus,
+        assignee_id: task.assignee_id || user.id,
+      }
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? updatedTask : t))
+      )
 
       const orderIndex = getNewOrderIndex(sortedNowItems, sortedNowItems.length)
 
@@ -247,20 +255,13 @@ export function ProjectWorkspace({
             ...prev,
             {
               ...(result as unknown as NowItemWithTask),
-              tasks: task,
+              tasks: updatedTask,
             },
           ])
-          // If auto-assigned, update local state
-          if (!task.assignee_id) {
-            setTasks((prev) =>
-              prev.map((t) =>
-                t.id === task.id ? { ...t, assignee_id: user.id } : t
-              )
-            )
-          }
         }
       } catch {
         toast.error('שגיאה בהוספה לעכשיו')
+        setTasks(initialTasks)
       }
       return
     }
