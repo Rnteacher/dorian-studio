@@ -92,6 +92,19 @@ export interface ProjectEvent {
   updated_at: string
 }
 
+export interface Announcement {
+  id: string
+  title: string
+  body: string
+  is_active: boolean
+  priority: number
+  starts_at: string
+  expires_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface ActivityLog {
   id: string
   user_id: string | null
@@ -231,6 +244,20 @@ export type Database = {
           },
           {
             foreignKeyName: 'project_events_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      announcements: {
+        Row: Announcement
+        Insert: Partial<Announcement> & { title: string }
+        Update: Partial<Announcement>
+        Relationships: [
+          {
+            foreignKeyName: 'announcements_created_by_fkey'
             columns: ['created_by']
             isOneToOne: false
             referencedRelation: 'profiles'

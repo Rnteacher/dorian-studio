@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FolderKanban, Users, LayoutDashboard, UsersRound, GanttChart } from 'lucide-react'
+import { FolderKanban, Users, LayoutDashboard, UsersRound, GanttChart, Home, Megaphone } from 'lucide-react'
 import { useUser } from '@/lib/hooks/use-user'
 import {
   Sidebar,
@@ -31,7 +31,7 @@ export function AppSidebar() {
   return (
     <Sidebar side="left" collapsible="icon">
       <SidebarHeader className="border-b px-4 py-3 overflow-hidden">
-        <Link href="/projects" className="text-lg font-bold whitespace-nowrap">
+        <Link href="/home" className="text-lg font-bold whitespace-nowrap">
           Dorian Studio
         </Link>
       </SidebarHeader>
@@ -41,6 +41,14 @@ export function AppSidebar() {
           <SidebarGroupLabel>ניווט</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/home'}>
+                  <Link href="/home">
+                    <Home className="size-4" />
+                    <span>בית</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/projects' || pathname.startsWith('/projects/')}>
                   <Link href="/projects">
@@ -79,6 +87,14 @@ export function AppSidebar() {
                     <Link href="/admin/clients">
                       <Users className="size-4" />
                       <span>לקוחות</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/announcements')}>
+                    <Link href="/admin/announcements">
+                      <Megaphone className="size-4" />
+                      <span>הודעות</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
