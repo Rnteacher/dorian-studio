@@ -23,7 +23,8 @@ export default async function ProjectsPage() {
     .select('role')
     .eq('id', user!.id)
     .single()
-  const isAdmin = (profileData as Profile | null)?.role === 'admin'
+  const role = (profileData as Profile | null)?.role
+  const isAdmin = role === 'super_admin' || role === 'admin' || role === 'staff'
 
   // Get user's project IDs first
   const { data: memberships } = await supabase

@@ -6,6 +6,7 @@ import type { Profile } from '@/types/database'
 interface UserContextType {
   user: Profile
   isAdmin: boolean
+  isSuperAdmin: boolean
 }
 
 export const UserContext = createContext<UserContextType | null>(null)

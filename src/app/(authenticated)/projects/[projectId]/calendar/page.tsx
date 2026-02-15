@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProjectCalendar } from '@/components/calendar/project-calendar'
-import type { ProjectEvent, Project } from '@/types/database'
+import type { ProjectEvent, Project, Profile } from '@/types/database'
 
 interface PageProps {
   params: Promise<{ projectId: string }>
@@ -46,7 +46,8 @@ export default async function CalendarPage({ params }: PageProps) {
     .eq('id', user.id)
     .single()
 
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'staff'
+  const role = (profile as Profile | null)?.role
+  const isAdmin = role === 'super_admin' || role === 'admin' || role === 'staff'
   const isLead = memberRes.data?.role === 'lead'
   const canEdit = isAdmin || isLead
 

@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'staff'
+export type UserRole = 'super_admin' | 'admin' | 'staff'
 export type ProjectRole = 'lead' | 'member' | 'viewer'
 export type TaskStatus = 'todo' | 'doing' | 'done' | 'frozen'
 

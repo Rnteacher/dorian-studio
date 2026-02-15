@@ -22,7 +22,7 @@ export default async function AdminLayout({
 
   const profile = data as Profile | null
 
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'staff')) {
+  if (!profile || !profile.role || !['super_admin', 'admin', 'staff'].includes(profile.role)) {
     redirect('/projects')
   }
 

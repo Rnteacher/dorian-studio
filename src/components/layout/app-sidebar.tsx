@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FolderKanban, Users, LayoutDashboard } from 'lucide-react'
+import { FolderKanban, Users, LayoutDashboard, UsersRound, GanttChart } from 'lucide-react'
 import { useUser } from '@/lib/hooks/use-user'
 import {
   Sidebar,
@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const { user, isAdmin } = useUser()
+  const { user, isAdmin, isSuperAdmin } = useUser()
 
   const initials = user.full_name
     .split(' ')
@@ -57,6 +57,14 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/timeline'}>
+                  <Link href="/timeline">
+                    <GanttChart className="size-4" />
+                    <span>ציר זמן</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -74,6 +82,16 @@ export function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {isSuperAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/team')}>
+                      <Link href="/admin/team">
+                        <UsersRound className="size-4" />
+                        <span>צוות</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

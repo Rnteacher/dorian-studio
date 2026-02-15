@@ -53,3 +53,36 @@ export async function toggleClientActiveAction(clientId: string, isActive: boole
   revalidatePath('/admin/clients')
   revalidatePath(`/admin/clients/${clientId}`)
 }
+
+export async function deleteClientAction(clientId: string) {
+  const supabase = await createClient()
+
+  // Verify super_admin role
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('לא מחובר')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if ((profile as { role: string } | null)?.role !== 'super_admin') {
+    throw new Error('אין הרשאה — נדרש מנהל על')
+  }
+
+  // Delete client (CASCADE will handle contacts, projects have ON DELETE RESTRICT)
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', clientId)
+
+  if (error) {
+    if (error.message.includes('violates foreign key constraint')) {
+      throw new Error('לא ניתן למחוק לקוח עם פרויקטים פעילים. ארכב את הפרויקטים תחילה.')
+    }
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/admin/clients')
+}

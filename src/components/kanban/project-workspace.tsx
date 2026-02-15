@@ -4,9 +4,10 @@ import { useState, useMemo, useCallback } from 'react'
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
@@ -92,9 +93,10 @@ export function ProjectWorkspace({
     [nowItems]
   )
 
-  // DnD sensors
+  // DnD sensors — improved for cross-container drag
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
@@ -207,6 +209,7 @@ export function ProjectWorkspace({
     }
 
     // --- Case 2: From kanban to Now list ---
+    // IMPORTANT: Do NOT change the task status when dragging to now-list
     if (activeContainer !== 'now-list' && overContainer === 'now-list') {
       const task = tasks.find((t) => t.id === activeId)
       if (!task) return
@@ -244,7 +247,26 @@ export function ProjectWorkspace({
       return
     }
 
-    // --- Case 3: Reorder within same kanban column or move between columns ---
+    // --- Case 3: From now-list back to kanban column ---
+    // Just remove from now, don't change task status
+    if (activeContainer === 'now-list' && overContainer !== 'now-list') {
+      const nowItemId = activeId.replace('now-', '')
+      const nowItem = sortedNowItems.find((i) => i.id === nowItemId)
+      if (!nowItem) return
+
+      // Optimistic remove from now
+      setNowItems((prev) => prev.filter((i) => i.id !== nowItemId))
+
+      try {
+        await removeFromNowAction(nowItemId, project.id)
+      } catch {
+        toast.error('שגיאה בהסרה מעכשיו')
+        setNowItems(initialNowItems)
+      }
+      return
+    }
+
+    // --- Case 4: Reorder within same kanban column or move between columns ---
     const task = tasks.find((t) => t.id === activeId)
     if (!task) return
 
@@ -393,7 +415,7 @@ export function ProjectWorkspace({
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}

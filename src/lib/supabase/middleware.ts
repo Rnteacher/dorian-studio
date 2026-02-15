@@ -33,7 +33,8 @@ export async function updateSession(request: NextRequest) {
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/access-denied')
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -45,6 +46,26 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/projects'
     return NextResponse.redirect(url)
+  }
+
+  // Block users without an approved role (role === null)
+  if (
+    user &&
+    !request.nextUrl.pathname.startsWith('/login') &&
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/access-denied')
+  ) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.role) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/access-denied'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

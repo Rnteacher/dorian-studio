@@ -9,10 +9,11 @@ interface UserProviderProps {
 }
 
 export function UserProvider({ profile, children }: UserProviderProps) {
-  const isAdmin = profile.role === 'admin' || profile.role === 'staff'
+  const isAdmin = profile.role === 'super_admin' || profile.role === 'admin' || profile.role === 'staff'
+  const isSuperAdmin = profile.role === 'super_admin'
 
   return (
-    <UserContext.Provider value={{ user: profile, isAdmin }}>
+    <UserContext.Provider value={{ user: profile, isAdmin, isSuperAdmin }}>
       {children}
     </UserContext.Provider>
   )

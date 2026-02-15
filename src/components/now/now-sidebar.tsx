@@ -19,8 +19,11 @@ export function NowSidebar({ items, onRemove }: NowSidebarProps) {
   })
 
   return (
-    <div className="w-[260px] shrink-0 border-e pe-4">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="w-[260px] shrink-0">
+      {/* Colored header bar */}
+      <div className="h-1.5 rounded-t-lg bg-amber-500" />
+
+      <div className="flex items-center gap-2 px-3 py-2 border-x bg-amber-50 border-amber-200">
         <Zap className="h-4 w-4 text-amber-500" />
         <h2 className="text-sm font-semibold">עכשיו</h2>
         <span className="text-xs text-muted-foreground">{items.length}</span>
@@ -28,11 +31,11 @@ export function NowSidebar({ items, onRemove }: NowSidebarProps) {
 
       <div
         ref={setNodeRef}
-        className={`rounded-lg border border-dashed p-2 transition-colors ${
-          isOver ? 'border-primary bg-primary/5' : 'border-transparent'
+        className={`rounded-b-lg border border-amber-200 bg-amber-50 p-2 transition-colors ${
+          isOver ? 'ring-2 ring-primary ring-offset-1' : ''
         }`}
       >
-        <ScrollArea className="h-[calc(100vh-240px)]">
+        <ScrollArea className="h-[calc(100vh-260px)]">
           <SortableContext
             items={items.map((i) => `now-${i.id}`)}
             strategy={verticalListSortingStrategy}

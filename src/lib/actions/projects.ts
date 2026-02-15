@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createProjectFolder } from '@/lib/google-drive'
 
 export async function createProjectAction(formData: FormData) {
   const supabase = await createClient()
@@ -13,13 +14,30 @@ export async function createProjectAction(formData: FormData) {
   if (!name?.trim()) throw new Error('שם פרויקט הוא שדה חובה')
   if (!clientId) throw new Error('יש לבחור לקוח')
 
+  // Try to auto-create Google Drive folder
+  let googleDriveUrl = (formData.get('google_drive_url') as string)?.trim() ?? ''
+  if (!googleDriveUrl) {
+    // Fetch client name for folder naming
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('name')
+      .eq('id', clientId)
+      .single()
+
+    const driveUrl = await createProjectFolder(
+      name.trim(),
+      (clientData as { name: string } | null)?.name ?? ''
+    )
+    if (driveUrl) googleDriveUrl = driveUrl
+  }
+
   const { data: project, error } = await supabase
     .from('projects')
     .insert({
       name: name.trim(),
       client_id: clientId,
       description: (formData.get('description') as string)?.trim() ?? '',
-      google_drive_url: (formData.get('google_drive_url') as string)?.trim() ?? '',
+      google_drive_url: googleDriveUrl,
       start_date: (formData.get('start_date') as string) || null,
       due_date: (formData.get('due_date') as string) || null,
     })

@@ -7,8 +7,10 @@ import { Plus, MapPin, Clock } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { EventForm } from './event-form'
+import { GanttChart } from '@/components/timeline/gantt-chart'
 import { createEventAction, updateEventAction, deleteEventAction } from '@/lib/actions/events'
 import type { ProjectEvent, Project } from '@/types/database'
 
@@ -49,6 +51,16 @@ export function ProjectCalendar({
   const selectedDateStr = selectedDate
     ? format(selectedDate, 'yyyy-MM-dd')
     : ''
+
+  // Gantt data for single project
+  const ganttProjects = useMemo(() => [{
+    id: project.id,
+    name: project.name,
+    status: project.status,
+    start_date: project.start_date,
+    due_date: project.due_date,
+    events,
+  }], [project, events])
 
   async function handleSave(data: {
     title: string
@@ -99,7 +111,7 @@ export function ProjectCalendar({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">לוח שנה</h1>
+        <h1 className="text-2xl font-bold">ציר זמן ואירועים</h1>
         {canEdit && (
           <Button
             size="sm"
@@ -114,6 +126,12 @@ export function ProjectCalendar({
         )}
       </div>
 
+      {/* Gantt timeline for this project */}
+      <GanttChart projects={ganttProjects} singleProject />
+
+      <Separator />
+
+      {/* Event calendar picker */}
       <div className="flex gap-6 flex-col lg:flex-row">
         <div className="shrink-0">
           <Calendar

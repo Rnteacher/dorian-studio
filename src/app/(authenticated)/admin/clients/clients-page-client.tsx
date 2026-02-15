@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -13,24 +14,54 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { ClientForm } from '@/components/admin/client-form'
-import { Plus, Search } from 'lucide-react'
+import { deleteClientAction } from '@/lib/actions/clients'
+import { Plus, Search, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Client } from '@/types/database'
 
 interface ClientsPageClientProps {
   clients: Client[]
+  isSuperAdmin?: boolean
 }
 
-export function ClientsPageClient({ clients }: ClientsPageClientProps) {
+export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientProps) {
+  const router = useRouter()
   const [formOpen, setFormOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   const filtered = clients.filter((c) => {
     if (!showInactive && !c.is_active) return false
     if (search && !c.name.includes(search)) return false
     return true
   })
+
+  function handleDelete() {
+    if (!deleteTarget) return
+    startTransition(async () => {
+      try {
+        await deleteClientAction(deleteTarget.id)
+        setDeleteTarget(null)
+        router.refresh()
+        toast.success('הלקוח נמחק')
+      } catch (err) {
+        toast.error((err as Error).message)
+      }
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -77,6 +108,7 @@ export function ClientsPageClient({ clients }: ClientsPageClientProps) {
               <TableHead>סטטוס</TableHead>
               <TableHead>הערות</TableHead>
               <TableHead>עדכון אחרון</TableHead>
+              {isSuperAdmin && <TableHead>פעולות</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -101,6 +133,20 @@ export function ClientsPageClient({ clients }: ClientsPageClientProps) {
                 <TableCell className="text-muted-foreground text-sm">
                   {new Date(client.updated_at).toLocaleDateString('he-IL')}
                 </TableCell>
+                {isSuperAdmin && (
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(client)}
+                      disabled={isPending}
+                      title="מחק לצמיתות"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -108,6 +154,24 @@ export function ClientsPageClient({ clients }: ClientsPageClientProps) {
       )}
 
       <ClientForm open={formOpen} onOpenChange={setFormOpen} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת לקוח</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם למחוק את &quot;{deleteTarget?.name}&quot; לצמיתות? פעולה זו אינה ניתנת לביטול.
+              כל אנשי הקשר של הלקוח יימחקו גם הם.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              מחק
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

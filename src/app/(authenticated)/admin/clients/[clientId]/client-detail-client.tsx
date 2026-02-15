@@ -1,20 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { ClientForm } from '@/components/admin/client-form'
 import { ClientContactsList } from '@/components/admin/client-contacts-list'
-import { ArrowRight, Pencil, Plus } from 'lucide-react'
+import { deleteClientAction } from '@/lib/actions/clients'
+import { ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Client, ClientContact, Project } from '@/types/database'
 
 interface Props {
   client: Client
   contacts: ClientContact[]
   projects: Pick<Project, 'id' | 'name' | 'status' | 'is_archived'>[]
+  isSuperAdmin?: boolean
 }
 
 const statusLabel: Record<string, string> = {
@@ -23,8 +36,23 @@ const statusLabel: Record<string, string> = {
   completed: 'הושלם',
 }
 
-export function ClientDetailClient({ client, contacts, projects }: Props) {
+export function ClientDetailClient({ client, contacts, projects, isSuperAdmin }: Props) {
+  const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  function handleDelete() {
+    startTransition(async () => {
+      try {
+        await deleteClientAction(client.id)
+        toast.success('הלקוח נמחק')
+        router.push('/admin/clients')
+      } catch (err) {
+        toast.error((err as Error).message)
+      }
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -44,10 +72,24 @@ export function ClientDetailClient({ client, contacts, projects }: Props) {
             {client.is_active ? 'פעיל' : 'לא פעיל'}
           </Badge>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-          <Pencil className="size-4 me-1" />
-          עריכה
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="size-4 me-1" />
+            עריכה
+          </Button>
+          {isSuperAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+              disabled={isPending}
+            >
+              <Trash2 className="size-4 me-1" />
+              מחק
+            </Button>
+          )}
+        </div>
       </div>
 
       {client.notes && (
@@ -94,6 +136,24 @@ export function ClientDetailClient({ client, contacts, projects }: Props) {
       </div>
 
       <ClientForm open={editOpen} onOpenChange={setEditOpen} client={client} />
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת לקוח</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם למחוק את &quot;{client.name}&quot; לצמיתות? פעולה זו אינה ניתנת לביטול.
+              כל אנשי הקשר של הלקוח יימחקו גם הם.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              מחק
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

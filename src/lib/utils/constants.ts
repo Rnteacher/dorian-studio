@@ -15,11 +15,26 @@ export const STATUS_COLORS: Record<TaskStatus, string> = {
 }
 
 export const ROLE_LABELS: Record<UserRole | ProjectRole, string> = {
-  admin: 'מנהל מערכת',
-  staff: 'צוות מערכת',
+  super_admin: 'מנהל על',
+  admin: 'מנהל',
+  staff: 'איש צוות',
   lead: 'מוביל פרויקט',
   member: 'חבר צוות',
   viewer: 'צופה',
+}
+
+export const STATUS_BG_COLORS: Record<TaskStatus, string> = {
+  todo: 'bg-slate-50 border-slate-200',
+  doing: 'bg-blue-50 border-blue-200',
+  done: 'bg-green-50 border-green-200',
+  frozen: 'bg-amber-50 border-amber-200',
+}
+
+export const STATUS_HEADER_COLORS: Record<TaskStatus, string> = {
+  todo: 'bg-slate-400',
+  doing: 'bg-blue-500',
+  done: 'bg-green-500',
+  frozen: 'bg-amber-500',
 }
 
 export const KANBAN_COLUMNS: TaskStatus[] = ['todo', 'doing', 'done', 'frozen']
