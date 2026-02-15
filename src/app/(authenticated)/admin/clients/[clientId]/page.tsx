@@ -32,7 +32,9 @@ export default async function ClientDetailPage({ params }: Props) {
   const client = clientResult.data as Client
   const contacts = (contactsResult.data ?? []) as ClientContact[]
   const projects = (projectsResult.data ?? []) as Pick<Project, 'id' | 'name' | 'status' | 'is_archived'>[]
-  const isSuperAdmin = (profileResult.data as Profile | null)?.role === 'super_admin'
+  const role = (profileResult.data as Profile | null)?.role
+  const isSuperAdmin = role === 'super_admin'
+  const isAdmin = role === 'super_admin' || role === 'admin'
 
   return (
     <ClientDetailClient
@@ -40,6 +42,7 @@ export default async function ClientDetailPage({ params }: Props) {
       contacts={contacts}
       projects={projects}
       isSuperAdmin={isSuperAdmin}
+      isAdmin={isAdmin}
     />
   )
 }

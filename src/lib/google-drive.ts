@@ -20,10 +20,16 @@ export async function createProjectFolder(
   clientName: string
 ): Promise<string | null> {
   const drive = getDriveClient()
-  if (!drive) return null
+  if (!drive) {
+    console.log('Google Drive: Service Account not configured (missing env vars)')
+    return null
+  }
 
   const parentFolderId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID
-  if (!parentFolderId) return null
+  if (!parentFolderId) {
+    console.log('Google Drive: GOOGLE_DRIVE_PARENT_FOLDER_ID not set')
+    return null
+  }
 
   try {
     const folderName = clientName

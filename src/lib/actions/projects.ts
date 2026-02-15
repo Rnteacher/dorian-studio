@@ -69,6 +69,53 @@ export async function createProjectAction(formData: FormData) {
   return project
 }
 
+export async function deleteProjectAction(projectId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('לא מחובר')
+
+  // Verify admin or super_admin role
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const role = (profile as { role: string } | null)?.role
+  if (!role || !['super_admin', 'admin'].includes(role)) {
+    throw new Error('אין הרשאה — נדרש מנהל')
+  }
+
+  // Delete related data first (project_members, tasks, task_now, project_events)
+  // task_now references tasks, so delete those first
+  const { data: taskIds } = await supabase
+    .from('tasks')
+    .select('id')
+    .eq('project_id', projectId)
+
+  if (taskIds && taskIds.length > 0) {
+    const ids = taskIds.map((t) => t.id)
+    await supabase.from('task_now').delete().in('task_id', ids)
+  }
+
+  await supabase.from('tasks').delete().eq('project_id', projectId)
+  await supabase.from('project_events').delete().eq('project_id', projectId)
+  await supabase.from('project_members').delete().eq('project_id', projectId)
+  await supabase.from('activity_log').delete().eq('project_id', projectId)
+
+  // Delete the project itself
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/clients')
+  revalidatePath('/projects')
+  revalidatePath('/home')
+}
+
 export async function updateProjectAction(projectId: string, formData: FormData) {
   const supabase = await createClient()
 

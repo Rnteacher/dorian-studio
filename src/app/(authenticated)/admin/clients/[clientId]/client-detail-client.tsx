@@ -19,6 +19,7 @@ import {
 import { ClientForm } from '@/components/admin/client-form'
 import { ClientContactsList } from '@/components/admin/client-contacts-list'
 import { deleteClientAction, toggleClientActiveAction } from '@/lib/actions/clients'
+import { deleteProjectAction } from '@/lib/actions/projects'
 import { ArrowRight, Pencil, Plus, Trash2, Power, PowerOff } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Client, ClientContact, Project } from '@/types/database'
@@ -28,6 +29,7 @@ interface Props {
   contacts: ClientContact[]
   projects: Pick<Project, 'id' | 'name' | 'status' | 'is_archived'>[]
   isSuperAdmin?: boolean
+  isAdmin?: boolean
 }
 
 const statusLabel: Record<string, string> = {
@@ -36,10 +38,11 @@ const statusLabel: Record<string, string> = {
   completed: 'הושלם',
 }
 
-export function ClientDetailClient({ client, contacts, projects, isSuperAdmin }: Props) {
+export function ClientDetailClient({ client, contacts, projects, isSuperAdmin, isAdmin }: Props) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteProjectTarget, setDeleteProjectTarget] = useState<Pick<Project, 'id' | 'name' | 'status' | 'is_archived'> | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleDelete() {
@@ -48,6 +51,20 @@ export function ClientDetailClient({ client, contacts, projects, isSuperAdmin }:
         await deleteClientAction(client.id)
         toast.success('הלקוח נמחק')
         router.push('/admin/clients')
+      } catch (err) {
+        toast.error((err as Error).message)
+      }
+    })
+  }
+
+  function handleDeleteProject() {
+    if (!deleteProjectTarget) return
+    startTransition(async () => {
+      try {
+        await deleteProjectAction(deleteProjectTarget.id)
+        setDeleteProjectTarget(null)
+        router.refresh()
+        toast.success('הפרויקט נמחק')
       } catch (err) {
         toast.error((err as Error).message)
       }
@@ -143,16 +160,31 @@ export function ClientDetailClient({ client, contacts, projects, isSuperAdmin }:
         ) : (
           <div className="space-y-2">
             {projects.map((project) => (
-              <Link
+              <div
                 key={project.id}
-                href={`/projects/${project.id}`}
                 className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent transition-colors"
               >
-                <span className="font-medium">{project.name}</span>
-                <Badge variant={project.is_archived ? 'outline' : 'secondary'}>
-                  {project.is_archived ? 'ארכיון' : statusLabel[project.status] ?? project.status}
-                </Badge>
-              </Link>
+                <Link href={`/projects/${project.id}`} className="flex-1 min-w-0">
+                  <span className="font-medium">{project.name}</span>
+                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant={project.is_archived ? 'outline' : 'secondary'}>
+                    {project.is_archived ? 'ארכיון' : statusLabel[project.status] ?? project.status}
+                  </Badge>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteProjectTarget(project)}
+                      disabled={isPending}
+                      title="מחק פרויקט"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -173,6 +205,24 @@ export function ClientDetailClient({ client, contacts, projects, isSuperAdmin }:
             <AlertDialogCancel>ביטול</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               מחק
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteProjectTarget} onOpenChange={(open) => !open && setDeleteProjectTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת פרויקט</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם למחוק את &quot;{deleteProjectTarget?.name}&quot; לצמיתות?
+              כל המשימות, האירועים וחברי הצוות של הפרויקט יימחקו גם הם.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              מחק פרויקט
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
