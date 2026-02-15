@@ -54,6 +54,7 @@ export function ProjectWorkspace({
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [preDragStatus, setPreDragStatus] = useState<TaskStatus | null>(null)
 
   const memberProfiles = useMemo(
     () => members.map((m) => m.profiles),
@@ -120,7 +121,9 @@ export function ProjectWorkspace({
   function handleDragStart(event: DragStartEvent) {
     const data = event.active.data.current
     if (data?.type === 'task') {
-      setActiveTask(data.task as Task)
+      const task = data.task as Task
+      setActiveTask(task)
+      setPreDragStatus(task.status)
     }
   }
 
@@ -133,38 +136,43 @@ export function ProjectWorkspace({
 
     if (!activeContainer || !overContainer || activeContainer === overContainer) return
 
-    // Moving from kanban to now-list
-    if (overContainer === 'now-list' && activeContainer !== 'now-list') {
-      // Don't optimistically update now — handled in onDragEnd
-      return
-    }
-
-    // Moving from now-list to kanban — don't do anything in dragOver
-    if (activeContainer === 'now-list' && overContainer !== 'now-list') {
+    // Any interaction with now-list — don't change status during dragOver
+    if (overContainer === 'now-list' || activeContainer === 'now-list') {
       return
     }
 
     // Moving between kanban columns — optimistic status update
-    if (activeContainer !== 'now-list' && overContainer !== 'now-list') {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === activeTask.id
-            ? { ...t, status: overContainer as TaskStatus }
-            : t
-        )
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === activeTask.id
+          ? { ...t, status: overContainer as TaskStatus }
+          : t
       )
-      setActiveTask((prev) =>
-        prev ? { ...prev, status: overContainer as TaskStatus } : null
-      )
-    }
+    )
+    setActiveTask((prev) =>
+      prev ? { ...prev, status: overContainer as TaskStatus } : null
+    )
   }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
 
+    const draggedTaskId = active.id as string
     setActiveTask(null)
 
-    if (!over) return
+    if (!over) {
+      // Drag cancelled — restore original status
+      if (preDragStatus) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === draggedTaskId ? { ...t, status: preDragStatus } : t
+          )
+        )
+      }
+      setPreDragStatus(null)
+      return
+    }
+    setPreDragStatus(null)
 
     const activeId = active.id as string
     const overId = over.id as string
@@ -213,6 +221,16 @@ export function ProjectWorkspace({
     if (activeContainer !== 'now-list' && overContainer === 'now-list') {
       const task = tasks.find((t) => t.id === activeId)
       if (!task) return
+
+      // Restore original status if dragOver accidentally changed it
+      if (preDragStatus && task.status !== preDragStatus) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === task.id ? { ...t, status: preDragStatus } : t
+          )
+        )
+        task.status = preDragStatus
+      }
 
       // Check if already in now
       if (nowItems.some((i) => i.task_id === task.id)) {
