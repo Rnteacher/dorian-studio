@@ -51,6 +51,19 @@ export async function createProjectFolder(
       fields: 'id, webViewLink',
     })
 
+    const fileId = res.data.id
+    if (fileId) {
+      // Make the folder accessible to anyone with the link (editor)
+      await drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: 'writer',
+          type: 'anyone',
+        },
+      })
+      console.log('[GoogleDrive] Permissions set: anyone with link can edit')
+    }
+
     console.log('[GoogleDrive] SUCCESS — webViewLink:', res.data.webViewLink)
     return res.data.webViewLink ?? null
   } catch (err) {
