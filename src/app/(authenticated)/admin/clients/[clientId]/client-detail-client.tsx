@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { ClientForm } from '@/components/admin/client-form'
 import { ClientContactsList } from '@/components/admin/client-contacts-list'
-import { deleteClientAction } from '@/lib/actions/clients'
-import { ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react'
+import { deleteClientAction, toggleClientActiveAction } from '@/lib/actions/clients'
+import { ArrowRight, Pencil, Plus, Trash2, Power, PowerOff } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Client, ClientContact, Project } from '@/types/database'
 
@@ -54,6 +54,18 @@ export function ClientDetailClient({ client, contacts, projects, isSuperAdmin }:
     })
   }
 
+  function handleToggleActive() {
+    startTransition(async () => {
+      try {
+        await toggleClientActiveAction(client.id, !client.is_active)
+        router.refresh()
+        toast.success(client.is_active ? 'הלקוח הועבר ללא פעיל' : 'הלקוח הופעל מחדש')
+      } catch (err) {
+        toast.error((err as Error).message)
+      }
+    })
+  }
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb & header */}
@@ -73,6 +85,17 @@ export function ClientDetailClient({ client, contacts, projects, isSuperAdmin }:
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToggleActive}
+            disabled={isPending}
+          >
+            {client.is_active
+              ? <><PowerOff className="size-4 me-1" />העבר ללא פעיל</>
+              : <><Power className="size-4 me-1 text-green-600" />הפעל מחדש</>
+            }
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="size-4 me-1" />
             עריכה

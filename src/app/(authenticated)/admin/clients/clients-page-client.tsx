@@ -25,8 +25,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { ClientForm } from '@/components/admin/client-form'
-import { deleteClientAction } from '@/lib/actions/clients'
-import { Plus, Search, Trash2 } from 'lucide-react'
+import { deleteClientAction, toggleClientActiveAction } from '@/lib/actions/clients'
+import { Plus, Search, Trash2, Power, PowerOff } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Client } from '@/types/database'
 
@@ -57,6 +57,18 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
         setDeleteTarget(null)
         router.refresh()
         toast.success('הלקוח נמחק')
+      } catch (err) {
+        toast.error((err as Error).message)
+      }
+    })
+  }
+
+  function handleToggleActive(client: Client) {
+    startTransition(async () => {
+      try {
+        await toggleClientActiveAction(client.id, !client.is_active)
+        router.refresh()
+        toast.success(client.is_active ? 'הלקוח הועבר ללא פעיל' : 'הלקוח הופעל מחדש')
       } catch (err) {
         toast.error((err as Error).message)
       }
@@ -108,7 +120,7 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
               <TableHead>סטטוס</TableHead>
               <TableHead>הערות</TableHead>
               <TableHead>עדכון אחרון</TableHead>
-              {isSuperAdmin && <TableHead>פעולות</TableHead>}
+              <TableHead>פעולות</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,20 +145,34 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
                 <TableCell className="text-muted-foreground text-sm">
                   {new Date(client.updated_at).toLocaleDateString('he-IL')}
                 </TableCell>
-                {isSuperAdmin && (
-                  <TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setDeleteTarget(client)}
+                      onClick={() => handleToggleActive(client)}
                       disabled={isPending}
-                      title="מחק לצמיתות"
+                      title={client.is_active ? 'העבר ללא פעיל' : 'הפעל מחדש'}
                     >
-                      <Trash2 className="size-4" />
+                      {client.is_active
+                        ? <PowerOff className="size-4 text-muted-foreground" />
+                        : <Power className="size-4 text-green-600" />
+                      }
                     </Button>
-                  </TableCell>
-                )}
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTarget(client)}
+                        disabled={isPending}
+                        title="מחק לצמיתות"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
