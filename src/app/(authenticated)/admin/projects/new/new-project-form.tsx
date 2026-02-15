@@ -113,18 +113,6 @@ export function NewProjectForm({ clients, users, defaultClientId }: Props) {
         <Textarea id="description" name="description" rows={3} placeholder="תיאור קצר של הפרויקט" />
       </div>
 
-      {/* Drive URL */}
-      <div className="space-y-2">
-        <Label htmlFor="google_drive_url">קישור Google Drive</Label>
-        <Input
-          id="google_drive_url"
-          name="google_drive_url"
-          type="url"
-          dir="ltr"
-          placeholder="https://drive.google.com/..."
-        />
-      </div>
-
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
