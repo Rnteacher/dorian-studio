@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { ClientForm } from '@/components/admin/client-form'
 import { deleteClientAction, toggleClientActiveAction } from '@/lib/actions/clients'
+import { CLIENT_STATUS_LABEL, CLIENT_STATUS_VARIANT } from '@/lib/constants/client'
 import { Plus, Search, Trash2, Power, PowerOff } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Client } from '@/types/database'
@@ -155,8 +156,8 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={client.is_active ? 'default' : 'secondary'}>
-                    {client.is_active ? 'פעיל' : 'לא פעיל'}
+                  <Badge variant={CLIENT_STATUS_VARIANT[client.status] ?? 'outline'}>
+                    {CLIENT_STATUS_LABEL[client.status] ?? client.status ?? 'לא הוגדר'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground max-w-xs truncate">

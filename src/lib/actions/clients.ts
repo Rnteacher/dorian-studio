@@ -6,13 +6,23 @@ import { createClient } from '@/lib/supabase/server'
 export async function createClientAction(formData: FormData) {
   const supabase = await createClient()
   const name = formData.get('name') as string
-  const notes = formData.get('notes') as string
 
   if (!name?.trim()) throw new Error('שם לקוח הוא שדה חובה')
 
   const { data, error } = await supabase
     .from('clients')
-    .insert({ name: name.trim(), notes: notes?.trim() ?? '' })
+    .insert({
+      name: name.trim(),
+      status: (formData.get('status') as string) || 'initial_contact',
+      notes: (formData.get('notes') as string)?.trim() ?? '',
+      brief: (formData.get('brief') as string)?.trim() ?? '',
+      budget_range: (formData.get('budget_range') as string)?.trim() ?? '',
+      payment_terms: (formData.get('payment_terms') as string)?.trim() ?? '',
+      is_paid: formData.get('is_paid') === 'true',
+      interest_areas: (formData.get('interest_areas') as string)?.trim() ?? '',
+      referral_source: (formData.get('referral_source') as string)?.trim() ?? '',
+      future_potential: (formData.get('future_potential') as string) || 'unknown',
+    })
     .select()
     .single()
 
@@ -25,13 +35,23 @@ export async function createClientAction(formData: FormData) {
 export async function updateClientAction(clientId: string, formData: FormData) {
   const supabase = await createClient()
   const name = formData.get('name') as string
-  const notes = formData.get('notes') as string
 
   if (!name?.trim()) throw new Error('שם לקוח הוא שדה חובה')
 
   const { error } = await supabase
     .from('clients')
-    .update({ name: name.trim(), notes: notes?.trim() ?? '' })
+    .update({
+      name: name.trim(),
+      status: (formData.get('status') as string) || 'initial_contact',
+      notes: (formData.get('notes') as string)?.trim() ?? '',
+      brief: (formData.get('brief') as string)?.trim() ?? '',
+      budget_range: (formData.get('budget_range') as string)?.trim() ?? '',
+      payment_terms: (formData.get('payment_terms') as string)?.trim() ?? '',
+      is_paid: formData.get('is_paid') === 'true',
+      interest_areas: (formData.get('interest_areas') as string)?.trim() ?? '',
+      referral_source: (formData.get('referral_source') as string)?.trim() ?? '',
+      future_potential: (formData.get('future_potential') as string) || 'unknown',
+    })
     .eq('id', clientId)
 
   if (error) throw new Error(error.message)

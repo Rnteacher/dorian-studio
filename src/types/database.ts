@@ -1,6 +1,8 @@
 export type UserRole = 'super_admin' | 'admin' | 'staff'
 export type ProjectRole = 'lead' | 'member' | 'viewer'
 export type TaskStatus = 'todo' | 'doing' | 'done' | 'frozen'
+export type ClientStatus = 'initial_contact' | 'in_evaluation' | 'active_project' | 'completed' | 'not_suitable'
+export type InteractionType = 'meeting' | 'call' | 'email' | 'note' | 'other'
 
 export interface Profile {
   id: string
@@ -17,6 +19,14 @@ export interface Client {
   id: string
   name: string
   notes: string
+  brief: string
+  status: ClientStatus
+  budget_range: string
+  payment_terms: string
+  is_paid: boolean
+  interest_areas: string
+  referral_source: string
+  future_potential: string
   is_active: boolean
   created_at: string
   updated_at: string
@@ -31,6 +41,26 @@ export interface ClientContact {
   role_title: string
   is_primary: boolean
   notes: string
+  created_at: string
+}
+
+export interface ClientInteraction {
+  id: string
+  client_id: string
+  interaction_date: string
+  interaction_type: InteractionType
+  summary: string
+  created_by: string | null
+  created_at: string
+}
+
+export interface ClientFeedback {
+  id: string
+  client_id: string
+  project_id: string | null
+  content: string
+  rating: number | null
+  created_by: string | null
   created_at: string
 }
 
@@ -161,6 +191,55 @@ export type Database = {
             columns: ['client_id']
             isOneToOne: false
             referencedRelation: 'clients'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      client_interactions: {
+        Row: ClientInteraction
+        Insert: Partial<ClientInteraction> & { client_id: string }
+        Update: Partial<ClientInteraction>
+        Relationships: [
+          {
+            foreignKeyName: 'client_interactions_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'client_interactions_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      client_feedback: {
+        Row: ClientFeedback
+        Insert: Partial<ClientFeedback> & { client_id: string }
+        Update: Partial<ClientFeedback>
+        Relationships: [
+          {
+            foreignKeyName: 'client_feedback_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'client_feedback_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'client_feedback_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           }
         ]
@@ -354,6 +433,8 @@ export type Database = {
       user_role: UserRole
       project_role: ProjectRole
       task_status: TaskStatus
+      client_status: ClientStatus
+      interaction_type: InteractionType
     }
     CompositeTypes: Record<string, never>
   }
