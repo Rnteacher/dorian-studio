@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { FolderKanban, Users, LayoutDashboard, UsersRound, GanttChart, Home, Megaphone } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { FolderKanban, Users, LayoutDashboard, UsersRound, GanttChart, Home, Megaphone, LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/use-user'
 import {
   Sidebar,
@@ -21,7 +22,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { user, isAdmin, isSuperAdmin } = useUser()
+
+  async function handleLogout() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   const initials = user.full_name
     .split(' ')
@@ -123,7 +131,13 @@ export function AppSidebar() {
           </Avatar>
           <div className="flex flex-col text-sm leading-tight min-w-0">
             <span className="font-medium truncate">{user.full_name}</span>
-            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive truncate transition-colors text-start"
+            >
+              <LogOut className="size-3 shrink-0" />
+              <span className="truncate">התנתק</span>
+            </button>
           </div>
         </div>
       </SidebarFooter>
