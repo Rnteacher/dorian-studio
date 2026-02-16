@@ -4,6 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createProjectFolder } from '@/lib/google-drive'
 
+interface PhaseData {
+  start_date: string
+  end_date: string
+  members: { user_id: string; role: string }[]
+}
+
 export async function createProjectAction(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -16,30 +22,27 @@ export async function createProjectAction(formData: FormData) {
 
   // Try to auto-create Google Drive folder
   let googleDriveUrl = (formData.get('google_drive_url') as string)?.trim() ?? ''
-  console.log('[createProject] google_drive_url from form:', JSON.stringify(googleDriveUrl))
-  console.log('[createProject] GOOGLE_SERVICE_ACCOUNT_EMAIL set:', !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL)
-  console.log('[createProject] GOOGLE_SERVICE_ACCOUNT_KEY set:', !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
-  console.log('[createProject] GOOGLE_DRIVE_PARENT_FOLDER_ID set:', !!process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID)
-
   if (!googleDriveUrl) {
-    console.log('[createProject] No drive URL from form, attempting auto-create...')
-    // Fetch client name for folder naming
     const { data: clientData } = await supabase
       .from('clients')
       .select('name')
       .eq('id', clientId)
       .single()
 
-    console.log('[createProject] Client name for folder:', (clientData as { name: string } | null)?.name)
     const driveUrl = await createProjectFolder(
       name.trim(),
       (clientData as { name: string } | null)?.name ?? ''
     )
-    console.log('[createProject] Drive folder result:', driveUrl)
     if (driveUrl) googleDriveUrl = driveUrl
-  } else {
-    console.log('[createProject] Skipping Drive auto-create — URL already provided')
   }
+
+  // Parse phases data
+  const phasesJson = formData.get('phases') as string
+  const phases: PhaseData[] = phasesJson ? JSON.parse(phasesJson) : []
+
+  // Use first phase start_date and last phase end_date for project dates
+  const projectStartDate = phases.length > 0 ? phases[0].start_date : ((formData.get('start_date') as string) || null)
+  const projectDueDate = phases.length > 0 ? phases[phases.length - 1].end_date : ((formData.get('due_date') as string) || null)
 
   const { data: project, error } = await supabase
     .from('projects')
@@ -48,29 +51,44 @@ export async function createProjectAction(formData: FormData) {
       client_id: clientId,
       description: (formData.get('description') as string)?.trim() ?? '',
       google_drive_url: googleDriveUrl,
-      start_date: (formData.get('start_date') as string) || null,
-      due_date: (formData.get('due_date') as string) || null,
+      start_date: projectStartDate,
+      due_date: projectDueDate,
     })
     .select()
     .single()
 
   if (error) throw new Error(error.message)
 
-  // Add members from JSON
-  const membersJson = formData.get('members') as string
-  if (membersJson) {
-    const members: { user_id: string; role: string }[] = JSON.parse(membersJson)
-    if (members.length > 0) {
-      const { error: membersError } = await supabase
-        .from('project_members')
-        .insert(
-          members.map((m) => ({
-            project_id: project.id,
-            user_id: m.user_id,
-            role: m.role,
-          }))
-        )
-      if (membersError) throw new Error(membersError.message)
+  // Create phases and members
+  if (phases.length > 0) {
+    for (let i = 0; i < phases.length; i++) {
+      const phase = phases[i]
+      const { data: phaseRow, error: phaseError } = await supabase
+        .from('project_phases')
+        .insert({
+          project_id: project.id,
+          start_date: phase.start_date,
+          end_date: phase.end_date,
+          order_index: i,
+        })
+        .select()
+        .single()
+
+      if (phaseError) throw new Error(phaseError.message)
+
+      if (phase.members.length > 0) {
+        const { error: membersError } = await supabase
+          .from('project_members')
+          .insert(
+            phase.members.map((m) => ({
+              project_id: project.id,
+              user_id: m.user_id,
+              role: m.role,
+              phase_id: phaseRow.id,
+            }))
+          )
+        if (membersError) throw new Error(membersError.message)
+      }
     }
   }
 
@@ -96,8 +114,7 @@ export async function deleteProjectAction(projectId: string) {
     throw new Error('אין הרשאה — נדרש מנהל')
   }
 
-  // Delete related data first (project_members, tasks, task_now, project_events)
-  // task_now references tasks, so delete those first
+  // Delete related data first
   const { data: taskIds } = await supabase
     .from('tasks')
     .select('id')
@@ -110,10 +127,11 @@ export async function deleteProjectAction(projectId: string) {
 
   await supabase.from('tasks').delete().eq('project_id', projectId)
   await supabase.from('project_events').delete().eq('project_id', projectId)
+  await supabase.from('project_notes').delete().eq('project_id', projectId)
   await supabase.from('project_members').delete().eq('project_id', projectId)
+  await supabase.from('project_phases').delete().eq('project_id', projectId)
   await supabase.from('activity_log').delete().eq('project_id', projectId)
 
-  // Delete the project itself
   const { error } = await supabase
     .from('projects')
     .delete()
@@ -159,6 +177,13 @@ export async function updateProjectWithMembersAction(projectId: string, formData
   const clientId = formData.get('client_id') as string
   if (!clientId) throw new Error('יש לבחור לקוח')
 
+  // Parse phases
+  const phasesJson = formData.get('phases') as string
+  const phases: PhaseData[] = phasesJson ? JSON.parse(phasesJson) : []
+
+  const projectStartDate = phases.length > 0 ? phases[0].start_date : ((formData.get('start_date') as string) || null)
+  const projectDueDate = phases.length > 0 ? phases[phases.length - 1].end_date : ((formData.get('due_date') as string) || null)
+
   // Update the project
   const { error } = await supabase
     .from('projects')
@@ -168,36 +193,48 @@ export async function updateProjectWithMembersAction(projectId: string, formData
       description: (formData.get('description') as string)?.trim() ?? '',
       google_drive_url: (formData.get('google_drive_url') as string)?.trim() ?? '',
       status: (formData.get('status') as string) ?? 'active',
-      start_date: (formData.get('start_date') as string) || null,
-      due_date: (formData.get('due_date') as string) || null,
+      start_date: projectStartDate,
+      due_date: projectDueDate,
     })
     .eq('id', projectId)
 
   if (error) throw new Error(error.message)
 
-  // Sync members: delete all existing, then insert new list
-  const membersJson = formData.get('members') as string
-  if (membersJson) {
-    const members: { user_id: string; role: string }[] = JSON.parse(membersJson)
+  // Sync phases: delete all existing phases + members, then insert new
+  if (phasesJson) {
+    // Delete old members and phases (members have CASCADE on phase_id)
+    await supabase.from('project_members').delete().eq('project_id', projectId)
+    await supabase.from('project_phases').delete().eq('project_id', projectId)
 
-    // Remove all current members
-    await supabase
-      .from('project_members')
-      .delete()
-      .eq('project_id', projectId)
+    // Insert new phases with members
+    for (let i = 0; i < phases.length; i++) {
+      const phase = phases[i]
+      const { data: phaseRow, error: phaseError } = await supabase
+        .from('project_phases')
+        .insert({
+          project_id: projectId,
+          start_date: phase.start_date,
+          end_date: phase.end_date,
+          order_index: i,
+        })
+        .select()
+        .single()
 
-    // Insert new members
-    if (members.length > 0) {
-      const { error: membersError } = await supabase
-        .from('project_members')
-        .insert(
-          members.map((m) => ({
-            project_id: projectId,
-            user_id: m.user_id,
-            role: m.role,
-          }))
-        )
-      if (membersError) throw new Error(membersError.message)
+      if (phaseError) throw new Error(phaseError.message)
+
+      if (phase.members.length > 0) {
+        const { error: membersError } = await supabase
+          .from('project_members')
+          .insert(
+            phase.members.map((m) => ({
+              project_id: projectId,
+              user_id: m.user_id,
+              role: m.role,
+              phase_id: phaseRow.id,
+            }))
+          )
+        if (membersError) throw new Error(membersError.message)
+      }
     }
   }
 

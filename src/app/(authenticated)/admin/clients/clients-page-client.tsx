@@ -113,11 +113,24 @@ export function ClientsPageClient({ clients, isSuperAdmin }: ClientsPageClientPr
 
       {filtered.length === 0 ? (
         <div className="text-center py-12 space-y-4">
-          <p className="text-muted-foreground text-lg">לא נמצאו לקוחות.</p>
-          <Button variant="outline" size="lg" onClick={() => setFormOpen(true)}>
-            <Plus className="size-5 me-1" />
-            הוסף לקוח ראשון
-          </Button>
+          {!showInactive && clients.some((c) => !c.is_active) ? (
+            <>
+              <p className="text-muted-foreground text-lg">
+                אין לקוחות פעילים. יש {clients.filter((c) => !c.is_active).length} לקוחות לא פעילים.
+              </p>
+              <Button variant="outline" size="lg" onClick={() => setShowInactive(true)}>
+                הצג לקוחות לא פעילים
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground text-lg">לא נמצאו לקוחות.</p>
+              <Button variant="outline" size="lg" onClick={() => setFormOpen(true)}>
+                <Plus className="size-5 me-1" />
+                הוסף לקוח ראשון
+              </Button>
+            </>
+          )}
         </div>
       ) : (
         <Table>

@@ -48,11 +48,30 @@ export interface Project {
   updated_at: string
 }
 
+export interface ProjectPhase {
+  id: string
+  project_id: string
+  start_date: string
+  end_date: string
+  order_index: number
+  created_at: string
+}
+
 export interface ProjectMember {
   id: string
   project_id: string
   user_id: string
   role: ProjectRole
+  phase_id: string | null
+  created_at: string
+}
+
+export interface ProjectNote {
+  id: string
+  project_id: string
+  user_id: string
+  content: string
+  is_private: boolean
   created_at: string
 }
 
@@ -160,6 +179,20 @@ export type Database = {
           }
         ]
       }
+      project_phases: {
+        Row: ProjectPhase
+        Insert: Partial<ProjectPhase> & { project_id: string; start_date: string; end_date: string }
+        Update: Partial<ProjectPhase>
+        Relationships: [
+          {
+            foreignKeyName: 'project_phases_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       project_members: {
         Row: ProjectMember
         Insert: Partial<ProjectMember> & { project_id: string; user_id: string }
@@ -174,6 +207,34 @@ export type Database = {
           },
           {
             foreignKeyName: 'project_members_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'project_members_phase_id_fkey'
+            columns: ['phase_id']
+            isOneToOne: false
+            referencedRelation: 'project_phases'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      project_notes: {
+        Row: ProjectNote
+        Insert: Partial<ProjectNote> & { project_id: string; user_id: string; content: string }
+        Update: Partial<ProjectNote>
+        Relationships: [
+          {
+            foreignKeyName: 'project_notes_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'project_notes_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'profiles'

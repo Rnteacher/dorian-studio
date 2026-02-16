@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { EditProjectForm } from './edit-project-form'
-import type { Client, Profile, Project } from '@/types/database'
+import type { Client, Profile, Project, ProjectPhase } from '@/types/database'
 
 interface Props {
   params: Promise<{ projectId: string }>
@@ -11,8 +11,8 @@ export default async function EditProjectPage({ params }: Props) {
   const { projectId } = await params
   const supabase = await createClient()
 
-  // Fetch project, clients, users, and current members in parallel
-  const [projectResult, clientsResult, usersResult, membersResult] = await Promise.all([
+  // Fetch project, clients, users, and phases (with their members) in parallel
+  const [projectResult, clientsResult, usersResult, phasesResult] = await Promise.all([
     supabase
       .from('projects')
       .select('*')
@@ -29,9 +29,10 @@ export default async function EditProjectPage({ params }: Props) {
       .eq('is_active', true)
       .order('full_name'),
     supabase
-      .from('project_members')
-      .select('user_id, role, profiles ( id, full_name, email, avatar_url )')
-      .eq('project_id', projectId),
+      .from('project_phases')
+      .select('*, project_members ( user_id, role, phase_id, profiles ( id, full_name, email, avatar_url ) )')
+      .eq('project_id', projectId)
+      .order('order_index', { ascending: true }),
   ])
 
   if (!projectResult.data) notFound()
@@ -39,10 +40,13 @@ export default async function EditProjectPage({ params }: Props) {
   const project = projectResult.data as unknown as Project
   const clients = (clientsResult.data ?? []) as Pick<Client, 'id' | 'name'>[]
   const users = (usersResult.data ?? []) as Pick<Profile, 'id' | 'full_name' | 'email' | 'avatar_url'>[]
-  const members = (membersResult.data ?? []) as unknown as Array<{
-    user_id: string
-    role: string
-    profiles: Pick<Profile, 'id' | 'full_name' | 'email' | 'avatar_url'> | null
+  const phases = (phasesResult.data ?? []) as unknown as Array<ProjectPhase & {
+    project_members: Array<{
+      user_id: string
+      role: string
+      phase_id: string | null
+      profiles: Pick<Profile, 'id' | 'full_name' | 'email' | 'avatar_url'> | null
+    }>
   }>
 
   return (
@@ -52,7 +56,7 @@ export default async function EditProjectPage({ params }: Props) {
         project={project}
         clients={clients}
         users={users}
-        currentMembers={members}
+        currentPhases={phases}
       />
     </div>
   )

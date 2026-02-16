@@ -27,8 +27,13 @@ import { TaskCard } from './task-card'
 import { TaskDialog } from './task-dialog'
 import { NowSidebar } from '@/components/now/now-sidebar'
 import { NowItem } from '@/components/now/now-item'
-import type { Task, TaskStatus, Project, Client, ClientContact } from '@/types/database'
+import { ProjectInfoPanel, type PhaseWithLead } from './project-info-panel'
+import type { Task, TaskStatus, Project, Client, ClientContact, ProjectNote, Profile } from '@/types/database'
 import type { MemberWithProfile, NowItemWithTask, TaskFilter } from '@/types/kanban'
+
+interface NoteWithProfile extends ProjectNote {
+  profiles: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+}
 
 interface ProjectWorkspaceProps {
   project: Project
@@ -37,6 +42,9 @@ interface ProjectWorkspaceProps {
   members: MemberWithProfile[]
   initialTasks: Task[]
   initialNowItems: NowItemWithTask[]
+  phases: PhaseWithLead[]
+  notes: NoteWithProfile[]
+  userId: string
 }
 
 export function ProjectWorkspace({
@@ -46,6 +54,9 @@ export function ProjectWorkspace({
   members,
   initialTasks,
   initialNowItems,
+  phases,
+  notes,
+  userId,
 }: ProjectWorkspaceProps) {
   const { user } = useUser()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
@@ -55,6 +66,7 @@ export function ProjectWorkspace({
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [preDragStatus, setPreDragStatus] = useState<TaskStatus | null>(null)
+  const [infoPanelOpen, setInfoPanelOpen] = useState(false)
 
   const memberProfiles = useMemo(
     () => members.map((m) => m.profiles),
@@ -430,6 +442,7 @@ export function ProjectWorkspace({
         members={members}
         filter={filter}
         onFilterChange={setFilter}
+        onInfoToggle={() => setInfoPanelOpen(true)}
       />
 
       <DndContext
@@ -493,6 +506,17 @@ export function ProjectWorkspace({
         }}
         onSave={handleSaveTask}
         onArchive={handleArchiveTask}
+      />
+
+      <ProjectInfoPanel
+        open={infoPanelOpen}
+        onOpenChange={setInfoPanelOpen}
+        project={project}
+        client={client}
+        contacts={contacts}
+        notes={notes}
+        phases={phases}
+        userId={userId}
       />
     </div>
   )

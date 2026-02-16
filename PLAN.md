@@ -151,10 +151,12 @@ src/
 2. **clients** — id, name, notes, is_active
 3. **client_contacts** — id, client_id (FK), name, email, phone, role_title, is_primary
 4. **projects** — id, client_id (FK), name, description, google_drive_url, is_archived
-5. **project_members** — id, project_id (FK), user_id (FK), role (project_role), UNIQUE(project_id, user_id)
-6. **tasks** — id, project_id (FK), title, description, status (task_status), order_index (FLOAT), assignee_id (FK), is_archived, created_by (FK)
-7. **task_now** — id, user_id (FK), task_id (FK), order_index (FLOAT), UNIQUE(user_id, task_id)
-8. **project_events** — id, project_id (FK), title, description, event_date, event_time, created_by (FK)
+5. **project_members** — id, project_id (FK), user_id (FK), role (project_role), phase_id (FK nullable), UNIQUE(project_id, user_id, phase_id)
+6. **project_phases** — id, project_id (FK), start_date, end_date, order_index
+7. **tasks** — id, project_id (FK), title, description, status (task_status), order_index (FLOAT), assignee_id (FK), is_archived, created_by (FK)
+8. **task_now** — id, user_id (FK), task_id (FK), order_index (FLOAT), UNIQUE(user_id, task_id)
+9. **project_events** — id, project_id (FK), title, description, event_date, event_time, created_by (FK)
+10. **project_notes** — id, project_id (FK), user_id (FK), content, is_private, created_at
 
 ### RLS Helper Functions
 - `is_admin()` — בודק אם המשתמש הנוכחי admin/staff
@@ -167,9 +169,11 @@ src/
 - **clients/client_contacts**: admin בלבד
 - **projects**: admin רואה הכל, members רואים רק שלהם
 - **project_members**: admin + members של הפרויקט קוראים, admin + lead מנהלים
+- **project_phases**: admin + members קוראים, admin כותבים
 - **tasks**: חברי פרויקט קוראים ומעדכנים
 - **task_now**: כל אחד מנהל רק את שלו, צפייה מוגבלת לפרויקטים משותפים
 - **project_events**: חברי פרויקט קוראים, lead מנהל
+- **project_notes**: משותפות — חברי פרויקט קוראים, אישיות — רק הכותב
 
 ### Realtime
 - tasks + task_now מוגדרים ל-realtime

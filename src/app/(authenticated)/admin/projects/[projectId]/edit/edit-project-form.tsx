@@ -14,30 +14,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { PhaseEditor, generatePhaseId, type PhaseState } from '@/components/admin/phase-editor'
 import { updateProjectWithMembersAction } from '@/lib/actions/projects'
 import { toast } from 'sonner'
-import { ArrowRight, X } from 'lucide-react'
-import type { Client, Profile, Project } from '@/types/database'
+import { ArrowRight } from 'lucide-react'
+import type { Client, Profile, Project, ProjectPhase } from '@/types/database'
 
-interface MemberWithProfile {
+interface MemberWithPhase {
   user_id: string
   role: string
+  phase_id: string | null
   profiles: Pick<Profile, 'id' | 'full_name' | 'email' | 'avatar_url'> | null
+}
+
+interface PhaseWithMembers extends ProjectPhase {
+  project_members: MemberWithPhase[]
 }
 
 interface Props {
   project: Project
   clients: Pick<Client, 'id' | 'name'>[]
   users: Pick<Profile, 'id' | 'full_name' | 'email' | 'avatar_url'>[]
-  currentMembers: MemberWithProfile[]
-}
-
-interface MemberSelection {
-  user_id: string
-  role: string
-  name: string
+  currentPhases: PhaseWithMembers[]
 }
 
 const statusOptions = [
@@ -46,49 +44,41 @@ const statusOptions = [
   { value: 'completed', label: 'הושלם' },
 ]
 
-export function EditProjectForm({ project, clients, users, currentMembers }: Props) {
+export function EditProjectForm({ project, clients, users, currentPhases }: Props) {
   const router = useRouter()
   const [clientId, setClientId] = useState(project.client_id)
   const [status, setStatus] = useState(project.status)
-  const [members, setMembers] = useState<MemberSelection[]>(
-    currentMembers.map((m) => ({
-      user_id: m.user_id,
-      role: m.role,
-      name: m.profiles?.full_name ?? 'משתמש',
-    }))
-  )
 
-  function addMember(userId: string) {
-    if (members.some((m) => m.user_id === userId)) return
-    const user = users.find((u) => u.id === userId)
-    if (!user) return
-    setMembers([...members, {
-      user_id: userId,
-      role: 'member',
-      name: user.full_name,
-    }])
-  }
+  // Convert existing phases to PhaseState format
+  const initialPhases: PhaseState[] = currentPhases.length > 0
+    ? currentPhases.map((p) => ({
+        id: generatePhaseId(),
+        start_date: p.start_date,
+        end_date: p.end_date,
+        members: (p.project_members ?? []).map((m) => ({
+          user_id: m.user_id,
+          role: m.role,
+          name: m.profiles?.full_name ?? 'משתמש',
+        })),
+      }))
+    : [{ id: generatePhaseId(), start_date: project.start_date ?? '', end_date: project.due_date ?? '', members: [] }]
 
-  function removeMember(userId: string) {
-    setMembers(members.filter((m) => m.user_id !== userId))
-  }
-
-  function toggleRole(userId: string) {
-    setMembers(
-      members.map((m) =>
-        m.user_id === userId
-          ? { ...m, role: m.role === 'lead' ? 'member' : 'lead' }
-          : m
-      )
-    )
-  }
+  const [phases, setPhases] = useState<PhaseState[]>(initialPhases)
 
   async function handleSubmit(formData: FormData) {
     formData.set('client_id', clientId)
     formData.set('status', status)
     formData.set(
-      'members',
-      JSON.stringify(members.map(({ user_id, role }) => ({ user_id, role })))
+      'phases',
+      JSON.stringify(
+        phases
+          .filter((p) => p.start_date && p.end_date)
+          .map(({ start_date, end_date, members }) => ({
+            start_date,
+            end_date,
+            members: members.map(({ user_id, role }) => ({ user_id, role })),
+          }))
+      )
     )
 
     try {
@@ -101,11 +91,6 @@ export function EditProjectForm({ project, clients, users, currentMembers }: Pro
     }
   }
 
-  const availableUsers = users.filter(
-    (u) => !members.some((m) => m.user_id === u.id)
-  )
-
-  // Find client name for breadcrumb
   const clientName = clients.find((c) => c.id === project.client_id)?.name ?? ''
 
   return (
@@ -142,25 +127,13 @@ export function EditProjectForm({ project, clients, users, currentMembers }: Pro
         {/* Name */}
         <div className="space-y-2">
           <Label htmlFor="name">שם פרויקט *</Label>
-          <Input
-            id="name"
-            name="name"
-            required
-            defaultValue={project.name}
-            placeholder="שם הפרויקט"
-          />
+          <Input id="name" name="name" required defaultValue={project.name} placeholder="שם הפרויקט" />
         </div>
 
         {/* Description */}
         <div className="space-y-2">
           <Label htmlFor="description">תיאור / בריף</Label>
-          <Textarea
-            id="description"
-            name="description"
-            rows={4}
-            defaultValue={project.description}
-            placeholder="תיאור קצר של הפרויקט"
-          />
+          <Textarea id="description" name="description" rows={4} defaultValue={project.description} placeholder="תיאור קצר של הפרויקט" />
         </div>
 
         {/* Status */}
@@ -183,101 +156,11 @@ export function EditProjectForm({ project, clients, users, currentMembers }: Pro
         {/* Drive URL */}
         <div className="space-y-2">
           <Label htmlFor="google_drive_url">קישור Google Drive</Label>
-          <Input
-            id="google_drive_url"
-            name="google_drive_url"
-            type="url"
-            dir="ltr"
-            defaultValue={project.google_drive_url}
-            placeholder="https://drive.google.com/..."
-          />
+          <Input id="google_drive_url" name="google_drive_url" type="url" dir="ltr" defaultValue={project.google_drive_url} placeholder="https://drive.google.com/..." />
         </div>
 
-        {/* Dates */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="start_date">תאריך התחלה</Label>
-            <Input
-              id="start_date"
-              name="start_date"
-              type="date"
-              defaultValue={project.start_date ?? ''}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="due_date">דדליין</Label>
-            <Input
-              id="due_date"
-              name="due_date"
-              type="date"
-              defaultValue={project.due_date ?? ''}
-            />
-          </div>
-        </div>
-
-        {/* Team */}
-        <div className="space-y-3">
-          <Label>צוות</Label>
-
-          {/* Add member */}
-          {availableUsers.length > 0 && (
-            <Select onValueChange={addMember} value="">
-              <SelectTrigger>
-                <SelectValue placeholder="הוסף חבר/ת צוות" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableUsers.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-5">
-                        <AvatarImage src={u.avatar_url ?? undefined} />
-                        <AvatarFallback className="text-[10px]">
-                          {u.full_name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {u.full_name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Selected members */}
-          {members.length > 0 && (
-            <div className="space-y-2">
-              {members.map((m) => (
-                <div
-                  key={m.user_id}
-                  className="flex items-center justify-between rounded-lg border p-2 pe-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{m.name}</span>
-                    <Badge
-                      variant={m.role === 'lead' ? 'default' : 'secondary'}
-                      className="cursor-pointer"
-                      onClick={() => toggleRole(m.user_id)}
-                    >
-                      {m.role === 'lead' ? 'מוביל/ה' : 'חבר/ה'}
-                    </Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="size-6"
-                    onClick={() => removeMember(m.user_id)}
-                  >
-                    <X className="size-3" />
-                  </Button>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground">
-                לחץ על התג כדי להחליף בין מוביל/ה לחבר/ה
-              </p>
-            </div>
-          )}
-        </div>
+        {/* Phases with teams and dates */}
+        <PhaseEditor phases={phases} onPhasesChange={setPhases} users={users} />
 
         <div className="flex gap-2 justify-end pt-4">
           <Button type="button" variant="outline" onClick={() => router.back()}>

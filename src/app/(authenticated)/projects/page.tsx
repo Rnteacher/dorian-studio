@@ -26,15 +26,26 @@ export default async function ProjectsPage() {
   const role = (profileData as Profile | null)?.role
   const isAdmin = role === 'super_admin' || role === 'admin' || role === 'staff'
 
-  // Get user's project IDs first
+  // Get user's project IDs — only where user has an active phase today
+  const today = new Date().toISOString().split('T')[0]
   const { data: memberships } = await supabase
     .from('project_members')
-    .select('project_id')
+    .select('project_id, phase_id, project_phases ( start_date, end_date )')
     .eq('user_id', user!.id)
 
-  const projectIds = (memberships ?? []).map(
-    (m: Record<string, string>) => m.project_id
-  )
+  const activeProjectIds = new Set<string>()
+  for (const m of (memberships ?? []) as unknown as Array<{
+    project_id: string
+    phase_id: string | null
+    project_phases: { start_date: string; end_date: string } | null
+  }>) {
+    if (!m.phase_id || !m.project_phases) {
+      activeProjectIds.add(m.project_id)
+    } else if (today >= m.project_phases.start_date && today <= m.project_phases.end_date) {
+      activeProjectIds.add(m.project_id)
+    }
+  }
+  const projectIds = Array.from(activeProjectIds)
 
   let projects: ProjectWithClient[] = []
 

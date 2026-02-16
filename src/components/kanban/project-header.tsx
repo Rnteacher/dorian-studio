@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, FolderOpen } from 'lucide-react'
+import { ExternalLink, FolderOpen, Info } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +19,7 @@ interface ProjectHeaderProps {
   members: MemberWithProfile[]
   filter: TaskFilter
   onFilterChange: (filter: TaskFilter) => void
+  onInfoToggle: () => void
 }
 
 export function ProjectHeader({
@@ -28,6 +29,7 @@ export function ProjectHeader({
   members,
   filter,
   onFilterChange,
+  onInfoToggle,
 }: ProjectHeaderProps) {
   const primaryContact = contacts.find((c) => c.is_primary) ?? contacts[0]
 
@@ -81,6 +83,16 @@ export function ProjectHeader({
             </Avatar>
           )}
         </div>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={onInfoToggle}>
+              <Info className="h-4 w-4 me-1" />
+              מידע
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>מידע על הפרויקט</TooltipContent>
+        </Tooltip>
 
         {project.google_drive_url ? (
           <Button variant="outline" size="sm" asChild>
