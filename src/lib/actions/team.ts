@@ -41,54 +41,59 @@ export async function addTeamMemberAction(
   email: string,
   fullName: string,
   role: UserRole
-) {
-  const { supabase } = await requireSuperAdmin()
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { supabase } = await requireSuperAdmin()
 
-  if (!email?.trim()) throw new Error('אימייל הוא שדה חובה')
-  if (!fullName?.trim()) throw new Error('שם מלא הוא שדה חובה')
+    if (!email?.trim()) return { success: false, error: 'אימייל הוא שדה חובה' }
+    if (!fullName?.trim()) return { success: false, error: 'שם מלא הוא שדה חובה' }
 
-  // Check if profile with this email already exists
-  const { data: existing } = await supabase
-    .from('profiles')
-    .select('id, role')
-    .eq('email', email.trim())
-    .maybeSingle()
+    // Check if profile with this email already exists
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('email', email.trim())
+      .maybeSingle()
 
-  if (existing) {
-    // If profile exists but has no role, update it
-    if (!(existing as Profile).role) {
-      const { error } = await supabase
+    if (existing) {
+      // If profile exists but has no role, update it
+      if (!(existing as Profile).role) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ role, full_name: fullName.trim(), is_active: true })
+          .eq('id', (existing as Profile).id)
+
+        if (error) return { success: false, error: error.message }
+      } else {
+        return { success: false, error: 'משתמש עם אימייל זה כבר קיים במערכת' }
+      }
+    } else {
+      // Use admin API to create an auth user first (profile created via handle_new_user trigger),
+      // then update the profile with role and full_name
+      const admin = createAdminClient()
+
+      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+        email: email.trim(),
+        email_confirm: true,
+        user_metadata: { full_name: fullName.trim() },
+      })
+
+      if (createError) return { success: false, error: createError.message }
+
+      // The trigger creates the profile — now update it with role
+      const { error: updateError } = await admin
         .from('profiles')
         .update({ role, full_name: fullName.trim(), is_active: true })
-        .eq('id', (existing as Profile).id)
+        .eq('id', newUser.user.id)
 
-      if (error) throw new Error(error.message)
-    } else {
-      throw new Error('משתמש עם אימייל זה כבר קיים במערכת')
+      if (updateError) return { success: false, error: updateError.message }
     }
-  } else {
-    // Use admin API to create an auth user first (profile created via handle_new_user trigger),
-    // then update the profile with role and full_name
-    const admin = createAdminClient()
 
-    const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-      email: email.trim(),
-      email_confirm: true,
-      user_metadata: { full_name: fullName.trim() },
-    })
-
-    if (createError) throw new Error(createError.message)
-
-    // The trigger creates the profile — now update it with role
-    const { error: updateError } = await admin
-      .from('profiles')
-      .update({ role, full_name: fullName.trim(), is_active: true })
-      .eq('id', newUser.user.id)
-
-    if (updateError) throw new Error(updateError.message)
+    revalidatePath('/admin/team')
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: (err as Error).message }
   }
-
-  revalidatePath('/admin/team')
 }
 
 export async function updateTeamMemberRoleAction(

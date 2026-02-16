@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -40,16 +41,16 @@ export function TeamMemberForm({ open, onOpenChange }: TeamMemberFormProps) {
     e.preventDefault()
 
     startTransition(async () => {
-      try {
-        await addTeamMemberAction(email, fullName, role)
+      const result = await addTeamMemberAction(email, fullName, role)
+      if (result.success) {
         toast.success('איש צוות נוסף בהצלחה')
         setEmail('')
         setFullName('')
         setRole('staff')
         onOpenChange(false)
         router.refresh()
-      } catch (err) {
-        toast.error((err as Error).message)
+      } else {
+        toast.error(result.error ?? 'שגיאה בהוספת איש צוות')
       }
     })
   }
@@ -59,6 +60,7 @@ export function TeamMemberForm({ open, onOpenChange }: TeamMemberFormProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>איש צוות חדש</DialogTitle>
+          <DialogDescription>הזן פרטים להוספת איש צוות חדש למערכת</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
