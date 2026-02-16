@@ -100,6 +100,14 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/projects')}>
+                    <Link href="/admin/projects">
+                      <FolderKanban className="size-4" />
+                      <span>פרויקטים</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/announcements')}>
                     <Link href="/admin/announcements">
                       <Megaphone className="size-4" />
