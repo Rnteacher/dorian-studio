@@ -208,7 +208,7 @@ export function ProjectsAdminClient({ projects, isSuperAdmin }: ProjectsAdminCli
               <TableRow key={project.id} className={project.is_archived ? 'opacity-50' : ''}>
                 <TableCell>
                   <Link
-                    href={`/projects/${project.id}/edit`}
+                    href={`/admin/projects/${project.id}/edit`}
                     className="font-medium hover:underline"
                   >
                     {project.name}
