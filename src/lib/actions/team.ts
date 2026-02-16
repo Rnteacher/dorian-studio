@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type { Profile, UserRole } from '@/types/database'
 
 async function requireSuperAdmin() {
@@ -67,19 +67,25 @@ export async function addTeamMemberAction(
       throw new Error('משתמש עם אימייל זה כבר קיים במערכת')
     }
   } else {
-    // Create a pre-registered profile with a random UUID
-    // When the user signs in via Google, handle_new_user trigger will update the id
-    const { error } = await supabase
-      .from('profiles')
-      .insert({
-        id: crypto.randomUUID(),
-        email: email.trim(),
-        full_name: fullName.trim(),
-        role,
-        is_active: true,
-      })
+    // Use admin API to create an auth user first (profile created via handle_new_user trigger),
+    // then update the profile with role and full_name
+    const admin = createAdminClient()
 
-    if (error) throw new Error(error.message)
+    const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+      email: email.trim(),
+      email_confirm: true,
+      user_metadata: { full_name: fullName.trim() },
+    })
+
+    if (createError) throw new Error(createError.message)
+
+    // The trigger creates the profile — now update it with role
+    const { error: updateError } = await admin
+      .from('profiles')
+      .update({ role, full_name: fullName.trim(), is_active: true })
+      .eq('id', newUser.user.id)
+
+    if (updateError) throw new Error(updateError.message)
   }
 
   revalidatePath('/admin/team')
@@ -128,17 +134,16 @@ export async function activateTeamMemberAction(profileId: string) {
 }
 
 export async function deleteTeamMemberAction(profileId: string) {
-  const { supabase, user } = await requireSuperAdmin()
+  const { user } = await requireSuperAdmin()
 
   // Don't allow deleting yourself
   if (profileId === user.id) {
     throw new Error('לא ניתן למחוק את עצמך')
   }
 
-  const { error } = await supabase
-    .from('profiles')
-    .delete()
-    .eq('id', profileId)
+  // Use admin client to delete the auth user (profile cascades via FK)
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.deleteUser(profileId)
 
   if (error) throw new Error(error.message)
 
