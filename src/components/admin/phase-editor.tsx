@@ -196,7 +196,10 @@ export function PhaseEditor({ phases, onPhasesChange, users }: PhaseEditorProps)
 
               {/* Team */}
               {available.length > 0 && (
-                <Select onValueChange={(val) => addMember(phase.id, val)} value="">
+                <Select
+                  key={`add-member-${phase.id}-${phase.members.length}`}
+                  onValueChange={(val) => addMember(phase.id, val)}
+                >
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="הוסף חבר/ת צוות" />
                   </SelectTrigger>
