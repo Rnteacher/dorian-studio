@@ -31,10 +31,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar side="left" collapsible="icon">
-      <SidebarHeader className="border-b px-4 py-3 overflow-hidden">
-        <Link href="/home" className="flex items-center gap-2 whitespace-nowrap">
-          <Image src="/logo.ico" alt="Dorian Studio" width={28} height={28} className="shrink-0" />
-          <span className="text-lg font-bold">Dorian Studio</span>
+      <SidebarHeader className="border-b px-3 py-3 overflow-hidden">
+        <Link href="/home">
+          <Image src="/logo.png" alt="Studio Dorian" width={140} height={140} className="w-full max-w-[140px]" />
         </Link>
       </SidebarHeader>
 

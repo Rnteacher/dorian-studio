@@ -10,7 +10,7 @@ const notoSansHebrew = Noto_Sans_Hebrew({
 })
 
 export const metadata: Metadata = {
-  title: 'Dorian Studio',
+  title: 'Studio Dorian',
   description: 'ניהול פרויקטים וקשרי לקוחות — סטודיו דוריאן',
 }
 
