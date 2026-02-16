@@ -11,8 +11,8 @@ export default async function EditProjectPage({ params }: Props) {
   const { projectId } = await params
   const supabase = await createClient()
 
-  // Fetch project, clients, users, and phases (with their members) in parallel
-  const [projectResult, clientsResult, usersResult, phasesResult] = await Promise.all([
+  // Fetch project, clients, users in parallel
+  const [projectResult, clientsResult, usersResult] = await Promise.all([
     supabase
       .from('projects')
       .select('*')
@@ -28,12 +28,15 @@ export default async function EditProjectPage({ params }: Props) {
       .select('id, full_name, email, avatar_url')
       .eq('is_active', true)
       .order('full_name'),
-    supabase
-      .from('project_phases')
-      .select('*, project_members ( user_id, role, phase_id, profiles ( id, full_name, email, avatar_url ) )')
-      .eq('project_id', projectId)
-      .order('order_index', { ascending: true }),
   ])
+
+  // Fetch phases separately (table may not exist if migration not run yet)
+  const phasesResult = await supabase
+    .from('project_phases')
+    .select('*, project_members ( user_id, role, phase_id, profiles ( id, full_name, email, avatar_url ) )')
+    .eq('project_id', projectId)
+    .order('order_index', { ascending: true })
+    .then((res) => (res.error ? { data: [] } : res))
 
   if (!projectResult.data) notFound()
 

@@ -16,7 +16,7 @@ export default async function ProjectPage({ params }: PageProps) {
   if (!user) redirect('/login')
 
   // Fetch all data in parallel
-  const [projectRes, tasksRes, membersRes, nowRes, phasesRes, notesRes] = await Promise.all([
+  const [projectRes, tasksRes, membersRes, nowRes] = await Promise.all([
     supabase
       .from('projects')
       .select('*, clients(*)')
@@ -37,16 +37,22 @@ export default async function ProjectPage({ params }: PageProps) {
       .select('*, tasks(*)')
       .eq('user_id', user.id)
       .order('order_index', { ascending: true }),
+  ])
+
+  // Fetch phases and notes separately (tables may not exist if migration not run yet)
+  const [phasesRes, notesRes] = await Promise.all([
     supabase
       .from('project_phases')
       .select('*, project_members(user_id, role, profiles(id, full_name, avatar_url))')
       .eq('project_id', projectId)
-      .order('order_index', { ascending: true }),
+      .order('order_index', { ascending: true })
+      .then((res) => (res.error ? { data: [] } : res)),
     supabase
       .from('project_notes')
       .select('*, profiles(id, full_name, avatar_url)')
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .then((res) => (res.error ? { data: [] } : res)),
   ])
 
   if (!projectRes.data) redirect('/projects')
