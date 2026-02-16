@@ -26,7 +26,7 @@ function LoginForm() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center space-y-3">
           <div className="flex justify-center">
-            <Image src="/logo.png" alt="Studio Dorian" width={120} height={120} />
+            <Image src="/logo.png" alt="Studio Dorian" width={200} height={200} />
           </div>
           <CardDescription>ניהול פרויקטים וקשרי לקוחות</CardDescription>
         </CardHeader>
