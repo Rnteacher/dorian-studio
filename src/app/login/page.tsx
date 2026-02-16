@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,7 +24,10 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30">
       <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center space-y-3">
+          <div className="flex justify-center">
+            <Image src="/logo.ico" alt="Dorian Studio" width={64} height={64} />
+          </div>
           <CardTitle className="text-2xl font-bold">Dorian Studio</CardTitle>
           <CardDescription>ניהול פרויקטים וקשרי לקוחות</CardDescription>
         </CardHeader>

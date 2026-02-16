@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { FolderKanban, Users, LayoutDashboard, UsersRound, GanttChart, Home, Megaphone } from 'lucide-react'
 import { useUser } from '@/lib/hooks/use-user'
@@ -31,8 +32,9 @@ export function AppSidebar() {
   return (
     <Sidebar side="left" collapsible="icon">
       <SidebarHeader className="border-b px-4 py-3 overflow-hidden">
-        <Link href="/home" className="text-lg font-bold whitespace-nowrap">
-          Dorian Studio
+        <Link href="/home" className="flex items-center gap-2 whitespace-nowrap">
+          <Image src="/logo.ico" alt="Dorian Studio" width={28} height={28} className="shrink-0" />
+          <span className="text-lg font-bold">Dorian Studio</span>
         </Link>
       </SidebarHeader>
 
