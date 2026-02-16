@@ -99,7 +99,7 @@ export function ProjectInfoPanel({
           <SheetTitle>מידע על הפרויקט</SheetTitle>
         </SheetHeader>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 pb-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 px-4 pb-4">
           {/* 1. Client Contact Info */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-1.5">
