@@ -20,6 +20,7 @@ export default async function NewProjectPage({ searchParams }: Props) {
       .from('profiles')
       .select('id, full_name, email, avatar_url')
       .eq('is_active', true)
+      .not('role', 'is', null)
       .order('full_name'),
   ])
 

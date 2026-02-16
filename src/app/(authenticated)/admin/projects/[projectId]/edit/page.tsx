@@ -27,6 +27,7 @@ export default async function EditProjectPage({ params }: Props) {
       .from('profiles')
       .select('id, full_name, email, avatar_url')
       .eq('is_active', true)
+      .not('role', 'is', null)
       .order('full_name'),
   ])
 
